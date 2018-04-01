@@ -1,4 +1,3 @@
-
 use std::env;
 use std::path::PathBuf;
 
@@ -27,4 +26,3 @@ fn update_for_move(state: &State) -> State {
     new_state.last_dir = env::current_dir().unwrap();
     new_state
 }
-

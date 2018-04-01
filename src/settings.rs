@@ -1,10 +1,9 @@
-
 use std::path::PathBuf;
 
 use resource::Resource;
 
 lazy_static! {
-    pub static ref SETTINGS: Settings ={
+    pub static ref SETTINGS: Settings = {
         let path = PathBuf::from("test_settings.json");
         Settings::fetch(&path).unwrap()
     };
@@ -26,4 +25,3 @@ impl Resource for Settings {
         }
     }
 }
-

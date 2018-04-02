@@ -21,7 +21,7 @@ impl Resource for State {
     }
 }
 
-fn update_for_move(state: &State) -> State {
+pub fn update_for_move(state: &State) -> State {
     let mut new_state = (*state).clone();
     new_state.last_dir = env::current_dir().unwrap();
     new_state

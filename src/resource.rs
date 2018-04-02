@@ -13,7 +13,7 @@ pub trait Resource: Serialize + DeserializeOwned {
     fn dump(&self, path: &PathBuf) -> Result<()> {
         let mut file = File::create(path)?;
         let data = serde_json::to_string_pretty(self).unwrap();
-        file.write(&data.as_bytes())?;
+        file.write_all(data.as_bytes())?;
         Ok(())
     }
 

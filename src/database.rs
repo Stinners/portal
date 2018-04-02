@@ -4,7 +4,9 @@ use std::io::Result;
 use std::path::PathBuf;
 
 use resource::Resource;
+use state::{update_for_move, STATE};
 use settings::SETTINGS;
+use jaro_winkler::jaro_winkler;
 
 pub type Database = VecDeque<PathBuf>;
 
@@ -37,12 +39,54 @@ pub fn add_value(database: &mut Database, path: &PathBuf) {
     }
 }
 
-pub fn visit(database: &mut Database, path: &PathBuf) -> Result<()> {
-    env::set_current_dir(path)?;
+/* Search for a dirrectory in the database and return Some(PathBuf) if 
+ * a match is found r None if not match is found, returns immediatly 
+ * if an exact match is found 
+ */
+pub fn search(database: &Database, new_path: &str) -> Option<PathBuf> {
+    
+    let mut match_value = 0.0;
+    let mut match_index = 0;
+    for (i, path) in database.iter().enumerate() {
 
-    //TODO make this update state as well
+        let name = path.file_name().unwrap()
+                       .to_str().unwrap();
+        let similarity = jaro_winkler(new_path, name);
 
-    add_value(database, &env::current_dir()?);
+        if similarity > 0.99 {
+            return Some(path.to_path_buf());
+        } else if similarity > match_value {
+            match_value = similarity;
+            match_index = i;
+        }
+
+    }
+
+    if match_value > 0.1 {
+        Some(database[match_index].clone())
+    } else { 
+        None
+    }
+}
+
+/* step is used to catually call cd to go somewhere, it also handles 
+ * updating the database and state
+ */
+pub fn step(database: &mut Database, new_dir: &PathBuf) -> Result<()> {
+
+    // Update and save the database 
+    let _ = add_value(database, new_dir);
+    let _ = database.dump(&SETTINGS.database_file);
+    
+    // Update and save settings
+    let new_state = update_for_move(&STATE);
+    let _ = new_state.dump(&SETTINGS.state_file);
+
+    // Print the result to stdout for the shell to pick up
+    print!("__cd__ {:?}", new_dir);
 
     Ok(())
 }
+
+        
+

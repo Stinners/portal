@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use std::env;
-use std::io::Result;
+use std::io::{Result};
 use std::path::PathBuf;
 
 use resource::Resource;
@@ -43,15 +43,18 @@ pub fn add_value(database: &mut Database, path: &PathBuf) {
  * a match is found r None if not match is found, returns immediatly 
  * if an exact match is found 
  */
-pub fn search(database: &Database, new_path: &str) -> Option<PathBuf> {
+pub fn search(database: &Database, new_path: PathBuf) -> Option<PathBuf> {
     
     let mut match_value = 0.0;
     let mut match_index = 0;
     for (i, path) in database.iter().enumerate() {
 
+        // This fails on invalid filenames
+        // .file_name() returns none if the path terminates in ..
         let name = path.file_name().unwrap()
                        .to_str().unwrap();
-        let similarity = jaro_winkler(new_path, name);
+
+        let similarity = jaro_winkler(new_path.to_str().unwrap(), name);
 
         if similarity > 0.99 {
             return Some(path.to_path_buf());
@@ -72,10 +75,10 @@ pub fn search(database: &Database, new_path: &str) -> Option<PathBuf> {
 /* step is used to catually call cd to go somewhere, it also handles 
  * updating the database and state
  */
-pub fn step(database: &mut Database, new_dir: &PathBuf) -> Result<()> {
+pub fn step(database: &mut Database, new_dir: PathBuf) -> Result<()> {
 
     // Update and save the database 
-    let _ = add_value(database, new_dir);
+    let _ = add_value(database, &new_dir);
     let _ = database.dump(&SETTINGS.database_file);
     
     // Update and save settings
@@ -83,10 +86,24 @@ pub fn step(database: &mut Database, new_dir: &PathBuf) -> Result<()> {
     let _ = new_state.dump(&SETTINGS.state_file);
 
     // Print the result to stdout for the shell to pick up
-    print!("__cd__ {:?}", new_dir);
+    print!("cd {}", new_dir.to_str().unwrap());
 
     Ok(())
 }
 
         
+pub fn jump(database: &mut Database, search_path: PathBuf) -> Result<()> {
+    match search(database, search_path) {
+        Some(path) => step(database, path),
+        None => {
+            println!("echo \"Could not find path\"");
+            Ok(())
+        }
+    }
+}
+
+pub fn back(database: &mut Database) -> Result<()> {
+    step(database, STATE.last_dir.clone())
+}
+
 

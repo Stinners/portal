@@ -19,6 +19,7 @@ pub trait Resource: Serialize + DeserializeOwned {
 
     // Sets the inital state of a resource and stores
     // it to file
+    // TODO this also needs to create the directory 
     fn init(path: &PathBuf) -> Result<()> {
         let initial = Self::initial_state();
         let _ = Self::dump(&initial, path);
